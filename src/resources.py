@@ -5,24 +5,121 @@ import uuid
 import logging
 
 
-class Project(Resource):
+class ProjectList(Resource):
 
-    def __init__(self):
-        project_list = [{'id': '123', 'name': 'Test project 1'}, {'id': '3453', 'name': 'Test project 2'}]
+    # Init the resource.
+    def __init__(self, projects):
+        self._projects = projects
 
+    # Get a list of all existing projects.
     def get(self):
         logging.debug('Returning list of projects')
 
-        return project_list
-        
+        out = []
+        for i in self._projects.values():
+            out.append(i)
+
+        return out
+    
+    # Create a new project.
     def post(self):
-        new_project = {'id': uuid.uuid4(), 'name': 'Test'}
+        if not request.is_json:
+            abort(400, 'No JSON Sadge.')
 
-        project_list.append(new_project)
+        new_id = str(uuid.uuid4())
 
-        logging.debug(f'Added Project with id {new_project["id"]}')
+        data = request.json
+        data['id'] = new_id
 
-        return new_project
+        self._projects[new_id] = data
 
-    def delete(self):
-        return {}
+        logging.debug(f'Added Project with id {new_id}')
+
+        return new_id
+
+
+class Project(Resource):
+
+    # Init the resource.
+    def __init__(self, projects):
+        self._projects = projects
+
+    # Delete a project.
+    def delete(self, project_id):
+        logging.debug(f'Deleting project {project_id}')
+
+        self._projects.pop(project_id, None)
+
+        return 200
+
+    # Edit a project.
+    def patch(self, project_id):
+        logging.debug(f'Patching project {project_id}')
+
+        return 200
+
+    # Get project metadata.
+    def get(self, project_id):
+        logging.debug(f'Getting meta data for project {project_id}')
+
+        return self._projects[project_id]
+
+
+class DocumentList(Resource):
+
+    # Init the resource.
+    def __init__(self, documents):
+        self._documents
+
+    # Get a list of all documents in the project.
+    def get(self, project_id):
+        logging.debug('Returning list of documents')
+
+        out = []
+        for i in self._documents[project_id].values():
+            out.append(i)
+
+        return out
+
+    # Upload a document to the project
+    def post(self, project_id):
+        if not request.is_json:
+            abort(400, 'No JSON Sadge.')
+
+        new_id = str(uuid.uuid4())
+
+        data = request.json
+        data['id'] = new_id
+
+        self._documents[project_id][new_id] = data
+
+        logging.debug(f'Uploading document {new_id} to project {project_id}')
+
+        return new_id
+
+
+class Document(Resource):
+
+    # Init the resource.
+    def __init__(self, documents):
+        self._documents = documents
+
+    # Delete a document.
+    def delete(self, project_id, doc_id):
+        logging.debug(f'Deleting document {doc_id}')
+
+        self._documents[project_id].pop(doc_id, None)
+
+        return 200
+
+    # Edit a document.
+    def patch(self, project_id, doc_id):
+        logging.debug(f'Patching document {doc_id}')
+
+        return 200
+
+    # Get document metadata.
+    def get(self, project_id, doc_id):
+        logging.debug(f'Getting meta data for document {doc_id}')
+
+        return self._documents[doc_id]

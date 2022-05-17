@@ -28,7 +28,7 @@ def main():
 
     # Add resources to the API.
     pre = '/api/v1'
-    api.add_resource(ProjectList, f'{pre}/projects', resource_class_kwargs={'projects': projects})
+    api.add_resource(ProjectList, f'{pre}/projects', resource_class_kwargs={'projects': projects, 'documents': documents})
     api.add_resource(Project, f'{pre}/projects/<project_id>', resource_class_kwargs={'projects': projects})
     api.add_resource(DocumentList, f'{pre}/projects/<project_id>/docs', resource_class_kwargs={'documents': documents})
     api.add_resource(Document, f'{pre}/projects/<project_id>/docs/<doc_id>', resource_class_kwargs={'documents': documents})

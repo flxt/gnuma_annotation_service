@@ -139,3 +139,81 @@ class Document(Resource):
         logging.debug(f'Getting meta data for document {doc_id}')
 
         return self._documents[project_id][doc_id]
+
+class LabelSetList(Resource):
+
+    # Get a list of all posible label sets.
+    def get(self):
+        logging.debug('Returning list of label sets')
+
+        return [
+            {
+                'id': '1234',
+                'name': 'Unnamed',
+                'labels': [
+                    {
+                        'name': 'ENTITY',
+                        'color': 'gray'
+                    }
+                ]
+            },
+            {
+                'id': '1337',
+                'name': 'Basic',
+                'labels': [
+                    {
+                        'name': 'PERSON',
+                        'color': 'red'
+                    },
+                    {
+                        'name': 'LOCATION',
+                        'color': 'blue'
+                    },
+                    {
+                        'name': 'ORGANIZATION',
+                        'color': 'green'
+                    }
+                ]
+            }
+        ]
+
+    # Create a new label set
+    def post(self):
+        return 200
+
+class LabelSet(Resource):
+
+    def get (self, labelSetId):
+        return {
+            'id': '1337',
+            'name': 'Basic',
+            'labels': [
+                {
+                    'name': 'PERSON',
+                    'color': 'red'
+                },
+                {
+                    'name': 'LOCATION',
+                    'color': 'blue'
+                },
+                {
+                    'name': 'ORGANIZATION',
+                    'color': 'green'
+                }
+            ]
+        }
+
+class ParagraphList(Resource):
+
+    # Init the resource.
+    def __init__(self):
+        self._paras = [
+            {'id': 1, 'text': 'I like trains. They go fast. Very Cool', 'labeled': False},
+            {'id': 2, 'text': 'Pythons are very cute sneks. They go hiss hiss.', 'labeled': True},
+            {'id': 3, 'text': 'Thinking of meanful examples is a very hard task.', 'labeled': False},
+        ]
+        # todo
+
+    # Get a list of all paragraphs in the document.
+    def get(self, project_id, doc_id):
+        return self._paras

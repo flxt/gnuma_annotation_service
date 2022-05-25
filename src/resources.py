@@ -3,217 +3,147 @@ from flask_restful import Resource, abort
 
 import uuid
 import logging
+import json
 
 
 class ProjectList(Resource):
 
-    # Init the resource.
-    def __init__(self, projects, documents):
-        self._projects = projects
-        self._documents = documents
-
     # Get a list of all existing projects.
     def get(self):
-        logging.debug('Returning list of projects')
+        with open('projects.json', 'r') as file:
+            projects = json.load(file)
 
-        out = []
-        for i in self._projects.values():
-            out.append(i)
-
-        return out
+        return list(projects.values())
     
     # Create a new project.
     def post(self):
-        if not request.is_json:
-            abort(400, 'No JSON Sadge.')
+        data = request.json
 
         new_id = str(uuid.uuid4())
-
-        data = request.json
         data['id'] = new_id
 
-        self._projects[new_id] = data
-        self._documents[new_id] = {}
+        with open('projects.json', 'r') as file:
+            projects = json.load(file)
 
-        logging.debug(f'Added Project with id {new_id}')
+        projects[new_id] = data
+
+        with open('projects.json', 'w') as file:
+            json.dump(projects, file)
+
+        with open('documents.json', 'r') as file:
+            documents = json.load(file)
+
+        documents[new_id] = {}
+
+        with open('documents.json', 'w') as file:
+            json.dump(documents, file)
 
         return new_id
 
 
 class Project(Resource):
 
-    # Init the resource.
-    def __init__(self, projects):
-        self._projects = projects
-
     # Delete a project.
     def delete(self, project_id):
-        logging.debug(f'Deleting project {project_id}')
+        with open('projects.json', 'r') as file:
+            projects = json.load(file)
 
-        self._projects.pop(project_id, None)
+        projects.pop(project_id, None)
+
+        with open('projects.json', 'w') as file:
+            json.dump(projects, file)
 
         return 200
 
     # Edit a project.
     def patch(self, project_id):
-        if not request.is_json:
-            abort(400, 'No JSON Sadge.')
-
-        logging.debug(request.json)
+        with open('projects.json', 'r') as file:
+            projects = json.load(file)
 
         for key, value in request.json.items():
-            self._projects[project_id][key] = value
+            projects[project_id][key] = value
 
-        logging.debug(f'Patching project {project_id}')
+        with open('projects.json', 'w') as file:
+            json.dump(projects, file)
 
         return 200
 
     # Get project metadata.
     def get(self, project_id):
-        logging.debug(f'Getting meta data for project {project_id}')
+        with open('projects.json', 'r') as file:
+            projects = json.load(file)
 
-        return self._projects[project_id]
+        return projects[project_id]
 
 
 class DocumentList(Resource):
 
-    # Init the resource.
-    def __init__(self, documents):
-        self._documents = documents
-
     # Get a list of all documents in the project.
     def get(self, project_id):
-        logging.debug('Returning list of documents')
+        with open('documents.json', 'r') as file:
+            documents = json.load(file)
 
-        out = []
-        for i in self._documents[project_id].values():
-            out.append(i)
+        return list(documents[project_id].values())
 
-        return out
-
-    # Upload a document to the project
+    # Add documents to the project
     def post(self, project_id):
-        if not request.is_json:
-            abort(400, 'No JSON Sadge.')
-
-        new_id = str(uuid.uuid4())
-
         data = request.json
-        data['id'] = new_id
 
-        self._documents[project_id][new_id] = data
+        with open('documents.json', 'r') as file:
+            documents = json.load(file)
 
-        logging.debug(f'Uploading document {new_id} to project {project_id}')
+        out = {}
+        for dat in data:
+            halp = {}
+            halp['id'] = dat
+            halp['labeled'] = False
+            out[dat] = halp
 
-        return new_id
+        documents[project_id] = out
+
+
+        with open('documents.json', 'w') as file:
+            json.dump(documents, file)
+
+        return 200
 
 
 class Document(Resource):
 
-    # Init the resource.
-    def __init__(self, documents):
-        self._documents = documents
-
-    # Delete a document.
-    def delete(self, project_id, doc_id):
-        logging.debug(f'Deleting document {doc_id}')
-
-        self._documents[project_id].pop(doc_id, None)
-
-        return 200
-
-    # Edit a document.
-    def patch(self, project_id, doc_id):
-        if not request.is_json:
-            abort(400, 'No JSON Sadge.')
-
-        for key, value in request.json.items():
-            self._documents[project_id][doc_id][key] = value
-
-        logging.debug(f'Patching document {doc_id}')
-
-        return 200
-
     # Get document metadata.
     def get(self, project_id, doc_id):
-        logging.debug(f'Getting meta data for document {doc_id}')
-
-        return self._documents[project_id][doc_id]
+        return 400
 
 class LabelSetList(Resource):
 
     # Get a list of all posible label sets.
     def get(self):
-        logging.debug('Returning list of label sets')
+        with open('labels.json', 'r') as file:
+            labels = json.load(file)
 
-        return [
-            {
-                'id': '1234',
-                'name': 'Unnamed',
-                'labels': [
-                    {
-                        'name': 'ENTITY',
-                        'color': 'gray'
-                    }
-                ]
-            },
-            {
-                'id': '1337',
-                'name': 'Basic',
-                'labels': [
-                    {
-                        'name': 'PERSON',
-                        'color': 'red'
-                    },
-                    {
-                        'name': 'LOCATION',
-                        'color': 'blue'
-                    },
-                    {
-                        'name': 'ORGANIZATION',
-                        'color': 'green'
-                    }
-                ]
-            }
-        ]
+        return list(labels.values())
 
     # Create a new label set
     def post(self):
-        return 200
+        data = request.json
+
+        new_id = str(uuid.uuid4())
+        data['id'] = new_id
+
+        with open('labels.json', 'r') as file:
+            labels = json.load(file)
+
+        labels[new_id] = data
+
+        with open('labels.json', 'w') as file:
+            json.dump(labels, file)
+
+        return new_id
 
 class LabelSet(Resource):
 
-    def get (self, labelSetId):
-        return {
-            'id': '1337',
-            'name': 'Basic',
-            'labels': [
-                {
-                    'name': 'PERSON',
-                    'color': 'red'
-                },
-                {
-                    'name': 'LOCATION',
-                    'color': 'blue'
-                },
-                {
-                    'name': 'ORGANIZATION',
-                    'color': 'green'
-                }
-            ]
-        }
+    def get (self, label_id):
+        with open('labels.json', 'r') as file:
+            labels = json.load(file)
 
-class ParagraphList(Resource):
-
-    # Init the resource.
-    def __init__(self):
-        self._paras = [
-            {'id': 1, 'text': 'I like trains. They go fast. Very Cool', 'labeled': False},
-            {'id': 2, 'text': 'Pythons are very cute sneks. They go hiss hiss.', 'labeled': True},
-            {'id': 3, 'text': 'Thinking of meanful examples is a very hard task.', 'labeled': False},
-        ]
-        # todo
-
-    # Get a list of all paragraphs in the document.
-    def get(self, project_id, doc_id):
-        return self._paras
+        return labels[label_id]

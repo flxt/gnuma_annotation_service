@@ -2,7 +2,7 @@ from flask import Flask
 from flask_restful import Api
 from flask_cors import CORS
 
-from src.resources import Project, ProjectList, Document, DocumentList, ParagraphList, LabelSetList, LabelSet
+from src.resources import Project, ProjectList, Document, DocumentList, LabelSetList, LabelSet
 
 import logging
 
@@ -22,19 +22,14 @@ def main():
         }
     })
 
-    # Define project storage. TODO: remove
-    projects = {}
-    documents = {}
-
     # Add resources to the API.
     pre = '/api/v1'
-    api.add_resource(ProjectList, f'{pre}/projects', resource_class_kwargs={'projects': projects, 'documents': documents})
-    api.add_resource(Project, f'{pre}/projects/<project_id>', resource_class_kwargs={'projects': projects})
-    api.add_resource(DocumentList, f'{pre}/projects/<project_id>/docs', resource_class_kwargs={'documents': documents})
-    api.add_resource(Document, f'{pre}/projects/<project_id>/docs/<doc_id>', resource_class_kwargs={'documents': documents})
-    api.add_resource(ParagraphList, f'{pre}/projects/<project_id>/docs/<doc_id>/paras')
+    api.add_resource(ProjectList, f'{pre}/projects')
+    api.add_resource(Project, f'{pre}/projects/<project_id>')
+    api.add_resource(DocumentList, f'{pre}/projects/<project_id>/docs')
+    api.add_resource(Document, f'{pre}/projects/<project_id>/docs/<doc_id>')
     api.add_resource(LabelSetList, f'{pre}/labels')
-    api.add_resource(LabelSet, f'{pre}/labels/<label_set_id>')
+    api.add_resource(LabelSet, f'{pre}/labels/<label_id>')
 
     # Start the server.
     app.run(debug=False, port = 11415, host = '0.0.0.0')

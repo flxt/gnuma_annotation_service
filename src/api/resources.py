@@ -1,12 +1,18 @@
 from flask import request
 from flask_restful import Resource, abort
 
+import pymongo
 import uuid
-import logging
 import json
 
+from src.util import logwrapper
 
+# Get a list of projects or create a new project.
 class ProjectList(Resource):
+
+    # Init the resource.
+    def __init__(self, anno_db):
+        self._project_col = anno_db['projects'] 
 
     # Get a list of all existing projects.
     def get(self):
@@ -40,8 +46,12 @@ class ProjectList(Resource):
 
         return new_id
 
-
+# Handle one specific project.
 class Project(Resource):
+
+    # Init the resource.
+    def __init__(self, anno_db):
+        self._project_col = anno_db['projects'] 
 
     # Delete a project.
     def delete(self, project_id):
@@ -76,6 +86,7 @@ class Project(Resource):
         return projects[project_id]
 
 
+# Get a list of documents in a project.
 class DocumentList(Resource):
 
     # Get a list of all documents in the project.
@@ -108,42 +119,55 @@ class DocumentList(Resource):
         return 200
 
 
+# Handle one document
 class Document(Resource):
 
     # Get document metadata.
     def get(self, project_id, doc_id):
         return 400
 
+# Get a list of label sets or create a new one.
 class LabelSetList(Resource):
+
+    # Init the resource.
+    def __init__(self, anno_db):
+        self._label_set_col = anno_db['label_sets'] 
 
     # Get a list of all posible label sets.
     def get(self):
-        with open('labels.json', 'r') as file:
-            labels = json.load(file)
+        label_sets = self._label_set_col.find()
+        label_sets = list(label_sets)
 
-        return list(labels.values())
+        logwrapper.debug(f'Label sets: {label_sets}')
+
+        return label_sets
 
     # Create a new label set
     def post(self):
         data = request.json
 
         new_id = str(uuid.uuid4())
-        data['id'] = new_id
+        data['_id'] = new_id
 
-        with open('labels.json', 'r') as file:
-            labels = json.load(file)
+        self._label_set_col.insert_one(data)
 
-        labels[new_id] = data
-
-        with open('labels.json', 'w') as file:
-            json.dump(labels, file)
+        logwrapper.info(f'Inserted new label set with id {new_id}.')
 
         return new_id
 
+# Get info for one label set.
 class LabelSet(Resource):
 
-    def get (self, label_id):
-        with open('labels.json', 'r') as file:
-            labels = json.load(file)
+    # Init the resource.
+    def __init__(self, anno_db):
+        self._label_set_col = anno_db['label_sets'] 
 
-        return labels[label_id]
+    def get (self, label_id):
+        label_set = self._label_set_col.find_one({'_id': label_id})
+
+        logwrapper.debug(f'id: {label_id} - label set: {label_set}')
+
+        if (not label_set):
+            abort(400, messsage=f'No label set with id {label_id} exists.')
+
+        return label_set

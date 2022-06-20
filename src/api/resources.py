@@ -16,33 +16,25 @@ class ProjectList(Resource):
 
     # Get a list of all existing projects.
     def get(self):
-        with open('projects.json', 'r') as file:
-            projects = json.load(file)
+        projects = self._project_col.find({'alive': True}, {'alive': 0})
+        projects = list(projects)
 
-        return list(projects.values())
+        logwrapper.debug(f'Projects: {projects}')
+
+        return projects
     
     # Create a new project.
     def post(self):
         data = request.json
 
         new_id = str(uuid.uuid4())
+        data['_id'] = new_id
         data['id'] = new_id
+        data['alive'] = True
 
-        with open('projects.json', 'r') as file:
-            projects = json.load(file)
+        self._project_col.insert_one(data)
 
-        projects[new_id] = data
-
-        with open('projects.json', 'w') as file:
-            json.dump(projects, file)
-
-        with open('documents.json', 'r') as file:
-            documents = json.load(file)
-
-        documents[new_id] = {}
-
-        with open('documents.json', 'w') as file:
-            json.dump(documents, file)
+        logwrapper.info(f'Inserted new project with id {new_id}.')
 
         return new_id
 
@@ -55,35 +47,27 @@ class Project(Resource):
 
     # Delete a project.
     def delete(self, project_id):
-        with open('projects.json', 'r') as file:
-            projects = json.load(file)
-
-        projects.pop(project_id, None)
-
-        with open('projects.json', 'w') as file:
-            json.dump(projects, file)
+        self._project_col.update_one({'_id': project_id}, {'$set': {'alive': False}})
 
         return 200
 
     # Edit a project.
     def patch(self, project_id):
-        with open('projects.json', 'r') as file:
-            projects = json.load(file)
-
         for key, value in request.json.items():
-            projects[project_id][key] = value
-
-        with open('projects.json', 'w') as file:
-            json.dump(projects, file)
+            self._project_col.update_one({'_id': project_id}, {'$set': {key: value}})
 
         return 200
 
     # Get project metadata.
     def get(self, project_id):
-        with open('projects.json', 'r') as file:
-            projects = json.load(file)
+        project = self._project_col.find_one({'_id': project_id}, {'alive': 0})
 
-        return projects[project_id]
+        logwrapper.debug(f'id: {project_id} - project: {project}')
+
+        if (not project):
+            abort(400, messsage=f'No label set with id {project_id} exists.')
+
+        return project
 
 
 # Get a list of documents in a project.
@@ -91,40 +75,30 @@ class DocumentList(Resource):
 
     # Get a list of all documents in the project.
     def get(self, project_id):
-        with open('documents.json', 'r') as file:
-            documents = json.load(file)
-
-        return list(documents[project_id].values())
+        return [
+            {'id': 1, 'labeled': False},
+            {'id': 2, 'labeled': True},
+            {'id': 3, 'labeled': False},
+        ]
 
     # Add documents to the project
     def post(self, project_id):
-        data = request.json
-
-        with open('documents.json', 'r') as file:
-            documents = json.load(file)
-
-        out = {}
-        for dat in data:
-            halp = {}
-            halp['id'] = dat
-            halp['labeled'] = False
-            out[dat] = halp
-
-        documents[project_id] = out
-
-
-        with open('documents.json', 'w') as file:
-            json.dump(documents, file)
-
         return 200
 
 
 # Handle one document
 class Document(Resource):
 
-    # Get document metadata.
+    # Get document labels and relations.
     def get(self, project_id, doc_id):
-        return 400
+        return {
+            'labels': [],
+            'relations': []
+        }
+
+    # Remove a document from the project
+    def delete(self, project_id, doc_id):
+        return 200
 
 # Get a list of label sets or create a new one.
 class LabelSetList(Resource):
@@ -148,6 +122,7 @@ class LabelSetList(Resource):
 
         new_id = str(uuid.uuid4())
         data['_id'] = new_id
+        data['id'] = new_id
 
         self._label_set_col.insert_one(data)
 
